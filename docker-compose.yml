@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+  home-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: home-bridge
+    restart: unless-stopped
+
+    # 端口映射
+    ports:
+      - "8899:8899"   # WebSocket 桥接服务（ESP32 连接）
+      - "8898:8898"   # MCP SSE 监控服务
+
+    # 挂载宿主机 /proc 和 /sys 以便读取系统监控数据
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+
+    # 非 root 用户运行（与 Dockerfile 中的 uid/gid 一致）
+    user: "1000:1000"
+
+    # 环境变量
+    environment:
+      # WebSocket 服务配置
+      BRIDGE_WS_PORT: "8899"
+      BRIDGE_LOG_LEVEL: "INFO"
+
+      # 系统监控路径（Docker 内挂载点）
+      BRIDGE_MONITOR_PROC_PATH: "/host/proc"
+      BRIDGE_MONITOR_SYS_PATH: "/host/sys"
+
+      # 外部服务（按需通过 .env 或环境变量覆盖）
+      BRIDGE_HERMES_API_KEY: "${BRIDGE_HERMES_API_KEY:-}"
+      BRIDGE_STT_API_KEY: "${BRIDGE_STT_API_KEY:-}"
+      BRIDGE_TTS_VOICE: "${BRIDGE_TTS_VOICE:-af_heart}"
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8899')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
