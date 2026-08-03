@@ -2,9 +2,7 @@ version: "3.9"
 
 services:
   home-bridge:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/binarysigh/home-bridge:latest
     container_name: home-bridge
     restart: unless-stopped
 
